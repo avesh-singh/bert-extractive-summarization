@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.nn.init import xavier_uniform_
 from transformers import BertModel, BertConfig, DistilBertConfig, DistilBertModel
 from models.MobileBert.modeling_mobilebert import MobileBertConfig, MobileBertModel
-from models.encoder import ExtTransformerEncoder
+from models.encoder import GRUEncoder
+
 
 class Bert(nn.Module):
     def __init__(self, bert_type='bertbase'):
@@ -33,10 +34,7 @@ class ExtSummarizer(nn.Module):
         super().__init__()
         self.device = device
         self.bert = Bert(bert_type=bert_type)
-        self.gru = nn.GRU(self.bert.model.config.hidden_size, 2048, 2, dropout=0.2)
-        # self.ext_layer = ExtTransformerEncoder(
-        #     self.bert.model.config.hidden_size, d_ff=2048, heads=8, dropout=0.2, num_inter_layers=2
-        # )
+        self.ext_layer = GRUEncoder(self.bert.model.config.hidden_size, 0.2, 2)
 
         if checkpoint is not None:
             self.load_state_dict(checkpoint, strict=True)
@@ -47,5 +45,5 @@ class ExtSummarizer(nn.Module):
         top_vec = self.bert(src, segs, mask_src)
         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
         sents_vec = sents_vec * mask_cls[:, :, None].float()
-        sent_scores = self.gru(sents_vec, mask_cls).squeeze(-1)
+        sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
         return sent_scores, mask_cls

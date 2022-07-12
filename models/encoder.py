@@ -52,32 +52,23 @@ class TransformerEncoderLayer(nn.Module):
         return self.feed_forward(out)
 
 
-class ExtTransformerEncoder(nn.Module):
-    def __init__(self, d_model, d_ff, heads, dropout, num_inter_layers=0):
+class GRUEncoder(nn.Module):
+    def __init__(self, d_model, dropout, num_inter_layers=1):
         super().__init__()
         self.d_model = d_model
-        self.num_inter_layers = num_inter_layers
-        self.pos_emb = PositionalEncoding(dropout, d_model)
-        self.transformer_inter = nn.ModuleList(
-            [TransformerEncoderLayer(d_model, heads, d_ff, dropout) for _ in range(num_inter_layers)]
-        )
+        self.gru = nn.GRU(d_model, d_model, num_inter_layers, dropout=0.2, bidirectional=True,
+                          batch_first=True)
         self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
-        self.wo = nn.Linear(d_model, 1, bias=True)
+        self.layer_norm = nn.LayerNorm(d_model * 2, eps=1e-6)
+        self.wo = nn.Linear(d_model * 2, 1, bias=True)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, top_vecs, mask):
-        """ See :obj:`EncoderBase.forward()`"""
-
-        batch_size, n_sents = top_vecs.size(0), top_vecs.size(1)
-        pos_emb = self.pos_emb.pe[:, :n_sents]
         x = top_vecs * mask[:, :, None].float()
-        x = x + pos_emb
 
-        for i in range(self.num_inter_layers):
-            x = self.transformer_inter[i](i, x, x, 1 - mask)  # all_sents * max_tokens * dim
+        output, hidden = self.gru(x)
 
-        x = self.layer_norm(x)
+        x = self.layer_norm(output)
         sent_scores = self.sigmoid(self.wo(x))
         sent_scores = sent_scores.squeeze(-1) * mask.float()
 
