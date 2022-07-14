@@ -2,21 +2,13 @@ import time
 import numpy as np
 import torch
 from transformers import BertTokenizer
-from nltk.tokenize import sent_tokenize
-from models.model_builder import ExtSummarizer
+import pickle
 
 
-def preprocess(source_fp):
-    """
-    - Remove \n
-    - Sentence Tokenize
-    - Add [SEP] [CLS] as sentence boundary
-    """
-    with open(source_fp) as source:
-        raw_text = source.read().replace("\n", " ").replace("[CLS] [SEP]", " ")
-    sents = sent_tokenize(raw_text)
+def preprocess(article):
+    sents = article['sentences']
     processed_text = "[CLS] [SEP]".join(sents)
-    return processed_text, len(sents)
+    return processed_text
 
 
 def load_text(processed_text, max_pos, device):
@@ -107,11 +99,12 @@ def test(model, input_data, result_path, max_length, block_trigram=True):
                 save_pred.write(pred[i].strip() + "\n")
 
 
-def summarize(raw_txt_fp, result_fp, model, max_length=3, max_pos=512, return_summary=True):
+def summarize(input_fp, result_fp, model, max_length=3, max_pos=512, return_summary=True):
     model.eval()
-    processed_text, full_length = preprocess(raw_txt_fp)
+    with open(input_fp, 'rb') as file:
+        contents = pickle.load(file)
+    processed_text = preprocess(contents[0])
     input_data = load_text(processed_text, max_pos, device="cpu")
     test(model, input_data, result_fp, max_length, block_trigram=True)
     if return_summary:
         return open(result_fp).read().strip()
-        

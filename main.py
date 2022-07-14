@@ -3,12 +3,11 @@ from models.model_builder import ExtSummarizer
 from ext_sum import summarize
 
 # Load model
-model_type = 'bertbase' #@param ['bertbase', 'distilbert', 'mobilebert']
-# checkpoint = torch.load(f'checkpoints/{model_type}_ext.pt', map_location='cpu')
-model = ExtSummarizer(bert_type=model_type, device='cpu')
+checkpoint = torch.load(f'gru_model.pt', map_location='cpu')
+model = ExtSummarizer(device='cpu')
 
 # Run summarization
-input_fp = 'raw_data/input.txt'
-result_fp = 'results/summary.txt'
+input_fp = "D0601_article_sentences.pkl"
+result_fp = 'results/summary_1.txt'
 summary = summarize(input_fp, result_fp, model, max_length=3)
 print(summary)
