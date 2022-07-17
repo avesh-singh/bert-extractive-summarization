@@ -32,7 +32,7 @@ class ExtSummarizer(nn.Module):
         super().__init__()
         self.device = device
         self.bert = Bert(bert_type=bert_type)
-        self.ext_layer = GRUEncoder(self.bert.model.config.hidden_size, 0.2, 2)
+        self.ext_layer = GRUEncoder(self.bert.model.config.hidden_size, 0.2, 1)
 
         if checkpoint is not None:
             self.load_state_dict(checkpoint, strict=True)

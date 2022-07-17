@@ -3,12 +3,12 @@ import numpy as np
 import torch
 from transformers import BertTokenizer
 import pickle
+import torch.nn as nn
 
 
 def preprocess(article):
-    sents = article['sentences']
-    processed_text = "[CLS] [SEP]".join(sents)
-    return processed_text
+    processed_text = ["[CLS] " + sentence + "[SEP] " for sentence in article]
+    return "".join(processed_text)
 
 
 def load_text(processed_text, max_pos, device):
@@ -49,27 +49,13 @@ def load_text(processed_text, max_pos, device):
     return src, mask_src, segs, clss, mask_cls, src_text
 
 
-def test(model, input_data, result_path, max_length, block_trigram=True):
-    def _get_ngrams(n, text):
-        ngram_set = set()
-        text_length = len(text)
-        max_index_ngram_start = text_length - n
-        for i in range(max_index_ngram_start + 1):
-            ngram_set.add(tuple(text[i : i + n]))
-        return ngram_set
-
-    def _block_tri(c, p):
-        tri_c = _get_ngrams(3, c.split())
-        for s in p:
-            tri_s = _get_ngrams(3, s.split())
-            if len(tri_c.intersection(tri_s)) > 0:
-                return True
-        return False
-
+def test(model, input_data, result_path, max_length):
     with open(result_path, "w") as save_pred:
         with torch.no_grad():
             src, mask, segs, clss, mask_cls, src_str = input_data
             sent_scores, mask = model(src, segs, clss, mask, mask_cls)
+            convert_to_probability = nn.Sigmoid()
+            sent_scores = convert_to_probability(sent_scores)
             sent_scores = sent_scores + mask.float()
             sent_scores = sent_scores.cpu().data.numpy()
             selected_ids = np.argsort(-sent_scores, 1)
@@ -83,15 +69,9 @@ def test(model, input_data, result_path, max_length, block_trigram=True):
                     if j >= len(src_str[i]):
                         continue
                     candidate = src_str[i][j].strip()
-                    if block_trigram:
-                        if not _block_tri(candidate, _pred):
-                            _pred.append(candidate)
-                    else:
-                        _pred.append(candidate)
-
+                    _pred.append(candidate)
                     if len(_pred) == max_length:
                         break
-
                 _pred = " ".join(_pred)
                 pred.append(_pred)
 
@@ -99,12 +79,24 @@ def test(model, input_data, result_path, max_length, block_trigram=True):
                 save_pred.write(pred[i].strip() + "\n")
 
 
-def summarize(input_fp, result_fp, model, max_length=3, max_pos=512, return_summary=True):
+def summarize(sample, result_fp, model, max_length=3, max_pos=512, return_summary=True):
     model.eval()
-    with open(input_fp, 'rb') as file:
-        contents = pickle.load(file)
-    processed_text = preprocess(contents[0])
+    processed_text = preprocess(sample['sentences'])
     input_data = load_text(processed_text, max_pos, device="cpu")
-    test(model, input_data, result_fp, max_length, block_trigram=True)
+    test(model, input_data, result_fp, max_length)
     if return_summary:
         return open(result_fp).read().strip()
+
+# def summarize(input_fp, result_fp, model, max_length=3, max_pos=512, return_summary=True):
+#     model.eval()
+#     with open(input_fp, 'rb') as file:
+#         contents = pickle.load(file)
+#     for i, sample in enumerate(contents):
+#         processed_text = preprocess(sample['sentences'])
+#         input_data = load_text(processed_text, max_pos, device="cpu")
+#         test(model, input_data, result_fp+f"_{i}", max_length, block_trigram=True)
+#     if return_summary:
+#         return open(result_fp).read().strip()
+
+
+

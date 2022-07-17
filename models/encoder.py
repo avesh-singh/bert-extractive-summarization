@@ -53,23 +53,21 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class GRUEncoder(nn.Module):
-    def __init__(self, d_model, dropout, num_inter_layers=1):
+    def __init__(self, d_model, dropout, num_inter_layers=2):
         super().__init__()
         self.d_model = d_model
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
         self.gru = nn.GRU(d_model, d_model, num_inter_layers, dropout=0.2, bidirectional=True,
                           batch_first=True)
-        self.dropout = nn.Dropout(dropout)
-        self.layer_norm = nn.LayerNorm(d_model * 2, eps=1e-6)
-        self.wo = nn.Linear(d_model * 2, 1, bias=True)
+        self.wo = nn.Linear(d_model * 2, 50, bias=True)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, top_vecs, mask):
         x = top_vecs * mask[:, :, None].float()
-
+        x = self.layer_norm(x)
         output, hidden = self.gru(x)
 
-        x = self.layer_norm(output)
-        sent_scores = self.sigmoid(self.wo(x))
-        sent_scores = sent_scores.squeeze(-1) * mask.float()
+        x = self.wo(torch.cat([hidden.data[0], hidden.data[1]], 1))
+        sent_scores = x[:, :mask.shape[1]].squeeze(-1) * mask.float()
 
         return sent_scores
