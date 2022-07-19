@@ -44,4 +44,4 @@ class ExtSummarizer(nn.Module):
         sents_vec = top_vec[torch.arange(top_vec.size(0)).unsqueeze(1), clss]
         sents_vec = sents_vec * mask_cls[:, :, None].float()
         sent_scores = self.ext_layer(sents_vec, mask_cls).squeeze(-1)
-        return sent_scores, mask_cls
+            return sent_scores, mask_cls
