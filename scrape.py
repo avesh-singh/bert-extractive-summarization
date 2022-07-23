@@ -27,6 +27,7 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
             articles.append({"filename": article, "article": f.read()})
 
     article_sentences = []
+    processed_article_sentences = []
     for article in articles:
         body = re.split(r"<TEXT>", article["article"])
 
@@ -36,21 +37,20 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
 
         sentences = [sentence.replace("\n", " ").strip(
         ) for para in all_paras for sentence in sent_tokenize(para)]
-        new_sentences = []
-        for sentence in sentences:
-            sentence = re.sub(r"####", " ", re.sub(
-                r"\s+", "", re.sub(r" ", "####", sentence)))
-            filtered_words = [lemmatizer.lemmatize(
-                word) for word in word_tokenize(sentence) if word.isalnum() and word not in stopwords]
-            new_sentences.append(" ".join(filtered_words))
-        if len(new_sentences) > 0:
+        processed_sentences = preprocess_sentences(sentences)
+        if len(processed_sentences) > 0:
+            processed_article_sentences.append(
+                {"filename": article["filename"], "sentences": processed_sentences})
+        if len(sentences) > 0:
             article_sentences.append(
-                {"filename": article["filename"], "sentences": new_sentences})
+                {"filename": article["filename"], "sentences": sentences})
     if write:
         with open(f"{prepared_dir}/{article_set}_article_sentences.pkl", 'wb') as file:
             pickle.dump(article_sentences, file)
+        with open(f"{prepared_dir}/{article_set}_processed_article_sentences.pkl", 'wb') as file:
+            pickle.dump(processed_article_sentences, file)
 
-    return article_sentences
+    return processed_article_sentences
 
 
 def read_summaries(article_set="D0601A"):
@@ -59,7 +59,7 @@ def read_summaries(article_set="D0601A"):
         with open(name, 'r') as f:
             summary_lines = f.readlines()
             summaries += [line.strip() for line in summary_lines]
-    return summaries
+    return preprocess_sentences(summaries)
 
 
 def cosine(u, v):
@@ -108,60 +108,72 @@ def calculate_similarities(article_set, article_sentences, summaries):
         pickle.dump(similarities, file)
 
 
+def preprocess_sentences(sentences):
+    new_sentences = []
+    for sentence in sentences:
+        sentence = re.sub(r"####", " ", re.sub(
+            r"\s+", "", re.sub(r" ", "####", sentence)))
+        filtered_words = [lemmatizer.lemmatize(
+            word) for word in word_tokenize(sentence) if word.isalnum() and word not in stopwords]
+        new_sentences.append(" ".join(filtered_words))
+    return new_sentences
+
+
 if __name__ == "__main__":
     args = sys.argv
     if len(args) == 1:
         topics = [
-            # "D0601A",
-            # "D0603C",
-            #     "D0605E",
-            # "D0607G",
-            # "D0609I",
-            # "D0611B",
-            # "D0613D",
-            # "D0615F",
-            # "D0617H",
-            # "D0619A",
-            # "D0621C",
-            # "D0623E",
-            # "D0625G",
-            # "D0627I",
-            # "D0629B",
-            # "D0631D",
-            # "D0633F",
-            # "D0635H",
-            # "D0637A",
-            # "D0639C",
-            # "D0641E",
-            # "D0643G",
-            # "D0645I",
-            "D0647B",
-            "D0649D",
-            "D0602B",
-            "D0604D",
-            "D0606F",
-            "D0608H",
-            "D0610A",
-            "D0612C",
-            "D0614E",
-            "D0616G",
-            "D0618I",
-            "D0620B",
-            "D0622D",
-            "D0624F",
-            "D0626H",
-            "D0628A",
-            "D0630C",
-            "D0632E",
-            "D0634G",
-            "D0636I",
-            "D0638B",
-            "D0640D",
-            "D0642F",
-            "D0644H",
-            "D0646A",
-            "D0648C",
-            "D0650E"]
+            "D0601A",
+            "D0603C",
+            "D0605E",
+            "D0607G",
+            "D0609I",
+            "D0611B",
+            "D0613D",
+            "D0615F",
+            "D0617H",
+            "D0619A",
+            "D0621C",
+            "D0623E",
+            "D0625G",
+            "D0627I",
+            "D0629B",
+            "D0631D",
+            "D0633F",
+            "D0635H",
+            "D0637A",
+            "D0639C",
+            "D0641E",
+            "D0643G",
+            "D0645I",
+            # "D0647B",
+            # "D0649D",
+            # "D0602B",
+            # "D0604D",
+            # "D0606F",
+            # "D0608H",
+            # "D0610A",
+            # "D0612C",
+            # "D0614E",
+            # "D0616G",
+            # "D0618I",
+            # "D0620B",
+            # "D0622D",
+            # "D0624F",
+            # "D0626H",
+            # "D0628A",
+            # "D0630C",
+            # "D0632E",
+            # "D0634G",
+            # "D0636I",
+            # "D0638B",
+            # "D0640D",
+            # "D0642F",
+            # "D0644H",
+            # "D0646A",
+            # "D0648C",
+            # "D0650E"
+        ]
     else:
         topics = [args[1]]
     for topic in topics:
