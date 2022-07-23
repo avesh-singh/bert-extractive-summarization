@@ -1,5 +1,4 @@
 from rouge_score import rouge_scorer
-import glob
 
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
 data_directory = "DUCDatasets-20220708T144932Z-001/DUCDatasets/DUC2007_Summarization_Documents"
