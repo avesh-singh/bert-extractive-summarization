@@ -168,7 +168,7 @@ class InferSent(nn.Module):
 
         for i in range(len(batch)):
             for j in range(len(batch[i])):
-                embed[j, i, :] = self.word_vec[batch[i][j]]
+                embed[j, i, :] = self.word_vec.get(batch[i][j], torch.zeros(self.word_emb_dim))
 
         return torch.FloatTensor(embed)
 

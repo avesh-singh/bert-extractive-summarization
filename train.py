@@ -4,31 +4,32 @@ import torch.nn as nn
 from torch.optim import Adam
 from models.model_builder import ExtSummarizer
 import torch
+from cnn import cnn_training_batch
 
 topics = [
     "D0601A",
-    # "D0603C",
-    # "D0605E",
-    # "D0607G",
-    # "D0609I",
-    # "D0611B",
-    # "D0613D",
-    # "D0615F",
-    # "D0617H",
-    # "D0619A",
-    # "D0621C",
-    # "D0623E",
-    # "D0625G",
-    # "D0627I",
-    # "D0629B",
-    # "D0631D",
-    # "D0633F",
-    # "D0635H",
-    # "D0637A",
-    # "D0639C",
-    # "D0641E",
-    # "D0643G",
-    # "D0645I",
+    "D0603C",
+    "D0605E",
+    "D0607G",
+    "D0609I",
+    "D0611B",
+    "D0613D",
+    "D0615F",
+    "D0617H",
+    "D0619A",
+    "D0621C",
+    "D0623E",
+    "D0625G",
+    "D0627I",
+    "D0629B",
+    "D0631D",
+    "D0633F",
+    "D0635H",
+    "D0637A",
+    "D0639C",
+    "D0641E",
+    "D0643G",
+    "D0645I",
     # --------
     # "D0647B",
     # "D0649D",
@@ -62,12 +63,13 @@ topics = [
 loss_fn = nn.BCEWithLogitsLoss()
 batch_size = 1
 learning_rate = 0.002
-epochs = 3
+epochs = 2
 model = ExtSummarizer(device='cpu')
 optimizer = Adam(model.parameters(), lr=learning_rate)
 batches = []
-for topic in topics:
-    batch = training_batch(topic)
+cnn_topics = ["train_10000.csvaa"]
+for topic in cnn_topics:
+    batch = cnn_training_batch(topic, items=5)
     size = len(batch)
     batches += [[size, batch]]
 for epoch in range(epochs):

@@ -33,7 +33,7 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
 
         paras = re.split(r"<P>", body[1])
 
-        all_paras = [para.replace("</P>", "") for para in paras[:-1]]
+        all_paras = [para.lower().replace("</p>", "") for para in paras[:-1]]
 
         sentences = [sentence.replace("\n", " ").strip(
         ) for para in all_paras for sentence in sent_tokenize(para)]
@@ -50,7 +50,7 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
         with open(f"{prepared_dir}/{article_set}_processed_article_sentences.pkl", 'wb') as file:
             pickle.dump(processed_article_sentences, file)
 
-    return processed_article_sentences
+    return article_sentences
 
 
 def read_summaries(article_set="D0601A"):
@@ -113,8 +113,7 @@ def preprocess_sentences(sentences):
     for sentence in sentences:
         sentence = re.sub(r"####", " ", re.sub(
             r"\s+", "", re.sub(r" ", "####", sentence)))
-        filtered_words = [lemmatizer.lemmatize(
-            word) for word in word_tokenize(sentence) if word.isalnum() and word not in stopwords]
+        filtered_words = [word for word in word_tokenize(sentence) if word not in stopwords]
         new_sentences.append(" ".join(filtered_words))
     return new_sentences
 
