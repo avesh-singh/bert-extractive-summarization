@@ -4,8 +4,10 @@ from ext_sum import summarize
 from os import walk
 from scrape import read_articles
 # Load model
-checkpoint = torch.load(f'gru_model.pt', map_location='cpu')
-model = ExtSummarizer(device='cpu')
+checkpoint = torch.load(f'checkpoints/gru-bert/model_checkpoints_1659519102.tar', map_location='cpu')
+model = ExtSummarizer(device='cpu', checkpoint=checkpoint['model_state_dict'])
+# checkpoint = torch.load(f'gru_model_1_layer.pt', map_location='cpu')
+# model = ExtSummarizer(device='cpu', checkpoint=checkpoint)
 
 # Run summarization
 root_directory = "DUC2006_Summarization_Documents/duc2006_docs"

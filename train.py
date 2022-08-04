@@ -4,72 +4,38 @@ import torch.nn as nn
 from torch.optim import Adam
 from models.model_builder import ExtSummarizer
 import torch
-from cnn import cnn_training_batch
+import glob
+import time
 
-topics = [
-    "D0601A",
-    "D0603C",
-    "D0605E",
-    "D0607G",
-    "D0609I",
-    "D0611B",
-    "D0613D",
-    "D0615F",
-    "D0617H",
-    "D0619A",
-    "D0621C",
-    "D0623E",
-    "D0625G",
-    "D0627I",
-    "D0629B",
-    "D0631D",
-    "D0633F",
-    "D0635H",
-    "D0637A",
-    "D0639C",
-    "D0641E",
-    "D0643G",
-    "D0645I",
-    # --------
-    # "D0647B",
-    # "D0649D",
-    # "D0602B",
-    # "D0604D",
-    # "D0606F",
-    # "D0608H",
-    # "D0610A",
-    # "D0612C",
-    # "D0614E",
-    # "D0616G",
-    # "D0618I",
-    # "D0620B",
-    # "D0622D",
-    # "D0624F",
-    # "D0626H",
-    # "D0628A",
-    # "D0630C",
-    # "D0632E",
-    # "D0634G",
-    # "D0636I",
-    # "D0638B",
-    # "D0640D",
-    # "D0642F",
-    # "D0644H",
-    # "D0646A",
-    # "D0648C",
-    # "D0650E"
-    ]
+checkpoints_dir = "checkpoints/gru-bert-duc"
 
 loss_fn = nn.BCEWithLogitsLoss()
 batch_size = 1
 learning_rate = 0.002
-epochs = 2
+epochs = 3
+checkpoint_epoch = 0
 model = ExtSummarizer(device='cpu')
 optimizer = Adam(model.parameters(), lr=learning_rate)
+
+checkpoints = sorted(glob.glob(f"{checkpoints_dir}/model_checkpoint*"))
+print(checkpoints)
+checkpoint_file = None
+if checkpoints:
+    checkpoint_file = checkpoints[-1]
+
+if checkpoint_file:
+    checkpoint = torch.load(checkpoint_file)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    checkpoint_epoch = checkpoint['epoch']
+
+
+if checkpoint_epoch:
+    epochs = epochs - checkpoint_epoch
 batches = []
-cnn_topics = ["train_10000.csvaa"]
+cnn_topics = ["input1"]
 for topic in cnn_topics:
-    batch = cnn_training_batch(topic, items=5)
+    batch = training_batch(topic)
     size = len(batch)
     batches += [[size, batch]]
 for epoch in range(epochs):
@@ -88,5 +54,8 @@ for epoch in range(epochs):
 
             loss = loss.item()
             print(f"loss: {loss:>7f}  [{i:>5d}/{size:>5d}]")
-
-torch.save(model.state_dict(), 'gru_model.pt')
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch,
+    }, f"{checkpoints_dir}/model_checkpoints_{int(time.time())}.tar")

@@ -10,6 +10,7 @@ import torch
 import numpy as np
 import pickle
 import sys
+import random
 
 prepared_dir = "prepared"
 stopwords = stopwords.words('english')
@@ -53,13 +54,20 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
     return article_sentences
 
 
-def read_summaries(article_set="D0601A"):
+def read_summaries(article_set="D0601A", preprocess=True, creator='models', num_sum=-1):
     summaries = []
-    for name in glob.glob(f"DUC2006_Summarization_Documents/NISTeval/ROUGE/models/{article_set[:-1]}*"):
+    num = 1
+    for name in glob.glob(f"DUC2006_Summarization_Documents/NISTeval/ROUGE/{creator}/{article_set[:-1]}*"):
+        if 0 < num_sum <= num:
+            continue
         with open(name, 'r') as f:
             summary_lines = f.readlines()
             summaries += [line.strip() for line in summary_lines]
-    return preprocess_sentences(summaries)
+        num += 1
+    if preprocess:
+        return preprocess_sentences(summaries)
+    else:
+        return summaries
 
 
 def cosine(u, v):

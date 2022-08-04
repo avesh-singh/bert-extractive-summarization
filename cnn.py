@@ -7,6 +7,7 @@ import nltk
 import numpy as np
 from ext_sum import load_text, preprocess
 
+
 def clean(document, join=True):
     sents = [" ".join([word for word in word_tokenize(sentence) if word.isalnum()]) for sentence in
                     sent_tokenize(
@@ -21,11 +22,12 @@ def cosine(u, v):
     return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
 
 
-def cnn_training_batch(filename, max_pos=512, items=100):
+def cnn_training_batch(filename, max_pos=512, items=None):
     df = pd.read_csv(f"raw_data/cnn_dailymail/{filename}.processed.csv")
-    df = df.iloc[:items]
+    if items:
+        df = df.iloc[items]
     batch = []
-    y = df.labels.apply(lambda x: list(map(int, x[1:-1].split(" "))))
+    y = df.labels.apply(lambda x: list(map(int, x[1:-1].split(", "))))
     for i, article in df.iterrows():
         processed = preprocess(clean(article['processed_article'], join=False))
         input_data = load_text(processed, max_pos, device="cpu")
@@ -35,9 +37,10 @@ def cnn_training_batch(filename, max_pos=512, items=100):
 
 if __name__ == "__main__":
     stopwords = stopwords.words('english')
-    filename = "train_10000.csvaa"
-    df = pd.read_csv(f"raw_data/cnn_dailymail/{filename}.csv")
-    print(df.iloc[1])
+    filename = "input5001"
+    df = pd.read_csv(f"raw_data/cnn_dailymail/{filename}.csv", header=None, names=["id", "article", 'highlights'])
+    df = df.iloc[:100]
+    print(df.columns)
 
     df["processed_article"] = df.article.apply(clean)
     df["processed_summary"] = df.highlights.apply(clean)

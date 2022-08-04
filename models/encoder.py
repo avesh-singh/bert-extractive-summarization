@@ -59,7 +59,8 @@ class GRUEncoder(nn.Module):
         self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
         self.gru = nn.GRU(d_model, d_model, num_inter_layers, dropout=0.2, bidirectional=True,
                           batch_first=True)
-        self.wo = nn.Linear(d_model * 2, 50, bias=True)
+        self.linear = nn.Linear(d_model * 4, d_model * 2, bias=True)
+        self.final = nn.Linear(d_model * 2, 200, bias=True)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, top_vecs, mask):
@@ -67,7 +68,9 @@ class GRUEncoder(nn.Module):
         x = self.layer_norm(x)
         output, hidden = self.gru(x)
 
-        x = self.wo(torch.cat([hidden.data[0], hidden.data[1]], 1))
+        x = self.linear(torch.cat([output[0][-1].unsqueeze(0), torch.cat([hidden[0], hidden[1]], 1)], 1))
+        x = self.final(x)
         sent_scores = x[:, :mask.shape[1]].squeeze(-1) * mask.float()
+        # sent_scores = x[:mask.shape[1]].squeeze(-1) * mask.float()
 
         return sent_scores

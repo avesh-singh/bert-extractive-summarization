@@ -4,6 +4,7 @@ import torch
 from transformers import BertTokenizer
 import pickle
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def preprocess(article):
@@ -20,8 +21,10 @@ def load_text(processed_text, max_pos, device):
         raw = raw.strip().lower()
         raw = raw.replace("[cls]", "[CLS]").replace("[sep]", "[SEP]")
         src_subtokens = tokenizer.tokenize(raw)
-        src_subtokens = ["[CLS]"] + src_subtokens + ["[SEP]"]
+        # src_subtokens = ["[CLS]"] + src_subtokens + ["[SEP]"]
         src_subtoken_idxs = tokenizer.convert_tokens_to_ids(src_subtokens)
+        if len(src_subtoken_idxs) < max_pos:
+            src_subtoken_idxs.extend([0] * (max_pos - len(src_subtoken_idxs)))
         src_subtoken_idxs = src_subtoken_idxs[:-1][:max_pos]
         src_subtoken_idxs[-1] = sep_vid
         _segs = [-1] + [i for i, t in enumerate(src_subtoken_idxs) if t == sep_vid]
@@ -49,13 +52,13 @@ def load_text(processed_text, max_pos, device):
     return src, mask_src, segs, clss, mask_cls, src_text
 
 
-def test(model, input_data, result_path, max_length):
-    with open(result_path, "w") as save_pred:
+def test(model, input_data, result_path, max_length, write_to_file=False):
+    def _generate_pred():
         with torch.no_grad():
             src, mask, segs, clss, mask_cls, src_str = input_data
             sent_scores, mask = model(src, segs, clss, mask, mask_cls)
             convert_to_probability = nn.Sigmoid()
-            sent_scores = convert_to_probability(sent_scores)
+            sent_scores = convert_to_probability(sent_scores)[0]
             sent_scores = sent_scores + mask.float()
             sent_scores = sent_scores.cpu().data.numpy()
             selected_ids = np.argsort(-sent_scores, 1)
@@ -74,18 +77,25 @@ def test(model, input_data, result_path, max_length):
                         break
                 _pred = " ".join(_pred)
                 pred.append(_pred)
+        return pred
 
+    if write_to_file:
+        with open(result_path, "w") as save_pred:
+            pred = _generate_pred()
             for i in range(len(pred)):
                 save_pred.write(pred[i].strip() + "\n")
+    else:
+        pred = "\n".join(_generate_pred())
+    return pred
 
 
-def summarize(sample, result_fp, model, max_length=3, max_pos=512, return_summary=True):
+def summarize(sample, result_fp, model, max_length=3, max_pos=512, return_summary=True, write_summary=False):
     model.eval()
     processed_text = preprocess(sample['sentences'])
     input_data = load_text(processed_text, max_pos, device="cpu")
-    test(model, input_data, result_fp, max_length)
+    predicted = test(model, input_data, result_fp, max_length, write_summary)
     if return_summary:
-        return open(result_fp).read().strip()
+        return predicted
 
 # def summarize(input_fp, result_fp, model, max_length=3, max_pos=512, return_summary=True):
 #     model.eval()
