@@ -65,7 +65,8 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
     return article_sentences
 
 
-def read_summaries(article_set="D0601A", preprocess=True, creator='models', num_sum=-1):
+def read_summaries(article_set="D0601A", preprocess=True, creator='DUC2006_Summarization_Documents/NISTeval/ROUGE'
+                                                                  '/models', num_sum=-1):
     """
     This method is for reading DUC dataset summaries for provided topic,
     preprocessing it and extracting sentences for downstream tasks
@@ -80,7 +81,7 @@ def read_summaries(article_set="D0601A", preprocess=True, creator='models', num_
     """
     summaries = []
     num = 1
-    for name in glob.glob(f"DUC2006_Summarization_Documents/NISTeval/ROUGE/{creator}/{article_set[:-1]}*"):
+    for name in glob.glob(f"{creator}/{article_set[:-1]}*"):
         if 0 < num_sum <= num:
             continue
         with open(name, 'r') as f:
@@ -97,7 +98,7 @@ def cosine(u, v):
     return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
 
 
-def sentence_embedding_model():
+def sentence_embedding_model(w2v_path='/media/avesh/New Volume/Study/NLP/glove.6B/glove.6B.300d.txt'):
     V = 2
     MODEL_PATH = 'sentence_encoder/infersent%s.pkl' % V
     params_model = {'bsize': 64, 'word_emb_dim': 300, 'enc_lstm_dim': 2048,
@@ -105,8 +106,7 @@ def sentence_embedding_model():
     model = InferSent(params_model)
     model.load_state_dict(torch.load(MODEL_PATH))
 
-    W2V_PATH = '/media/avesh/New Volume/Study/NLP/glove.6B/glove.6B.300d.txt'
-    model.set_w2v_path(W2V_PATH)
+    model.set_w2v_path(w2v_path)
     return model
 
 
