@@ -24,7 +24,7 @@ def load_text(processed_text, max_pos, device):
         # src_subtokens = ["[CLS]"] + src_subtokens + ["[SEP]"]
         src_subtoken_idxs = tokenizer.convert_tokens_to_ids(src_subtokens)
         if len(src_subtoken_idxs) < max_pos:
-            src_subtoken_idxs.extend([0] * (max_pos - len(src_subtoken_idxs)))
+            src_subtoken_idxs.extend([0] * (max_pos - len(src_subtoken_idxs) + 1))
         src_subtoken_idxs = src_subtoken_idxs[:-1][:max_pos]
         src_subtoken_idxs[-1] = sep_vid
         _segs = [-1] + [i for i, t in enumerate(src_subtoken_idxs) if t == sep_vid]

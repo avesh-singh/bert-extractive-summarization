@@ -28,11 +28,11 @@ class Bert(nn.Module):
 
 
 class ExtSummarizer(nn.Module):
-    def __init__(self, device, checkpoint=None, bert_type='bertbase'):
+    def __init__(self, device, checkpoint=None, bert_type='bertbase', gru_layers=1):
         super().__init__()
         self.device = device
         self.bert = Bert(bert_type=bert_type)
-        self.ext_layer = GRUEncoder(self.bert.model.config.hidden_size, 0.2, 1)
+        self.ext_layer = GRUEncoder(self.bert.model.config.hidden_size, 0.2, gru_layers)
 
         if checkpoint is not None:
             self.load_state_dict(checkpoint, strict=True)

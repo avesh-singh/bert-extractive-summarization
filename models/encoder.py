@@ -57,7 +57,7 @@ class GRUEncoder(nn.Module):
         super().__init__()
         self.d_model = d_model
         self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
-        self.gru = nn.GRU(d_model, d_model, num_inter_layers, dropout=0.2, bidirectional=True,
+        self.gru = nn.GRU(d_model, d_model, num_inter_layers, dropout=dropout, bidirectional=True,
                           batch_first=True)
         self.linear = nn.Linear(d_model * 4, d_model * 2, bias=True)
         self.final = nn.Linear(d_model * 2, 200, bias=True)

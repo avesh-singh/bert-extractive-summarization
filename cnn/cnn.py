@@ -27,7 +27,7 @@ def cnn_training_batch(filename, max_pos=512, items=None):
     if items:
         df = df.iloc[items]
     batch = []
-    y = df.labels.apply(lambda x: list(map(int, x[1:-1].split(", "))))
+    y = df.labels.apply(lambda x: list(map(int, x[1:-1].split(","))))
     for i, article in df.iterrows():
         processed = preprocess(clean(article['processed_article'], join=False))
         input_data = load_text(processed, max_pos, device="cpu")

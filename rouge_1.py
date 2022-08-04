@@ -11,7 +11,7 @@ data_directory = "DUC2006_Summarization_Documents"
 summary_directory = data_directory + "/NISTeval/ROUGE"
 
 model_summary_file = summary_directory + '/models/D0601.M.250.A.E'
-peer_summary_file = "results/summary.txt"
+peer_summary_file = "results/summary_DUC.txt"
 
 with open(peer_summary_file, 'r') as file:
     summaries = file.read()

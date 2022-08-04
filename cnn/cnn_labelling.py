@@ -4,10 +4,25 @@ from rouge_score import rouge_scorer
 import operator
 
 
-def main():
-    filename = "input1"
-    df = pd.read_csv(f"raw_data/cnn_dailymail/{filename}.csv", header=None, names=["id", "article", 'highlights'])
-    # df = df.iloc[:2]
+def main(file):
+    """
+    this method labels cnn article sentences on whether
+    each sentence should come in summary or not. To determine
+    these sentences, article sentences are picked one by one,
+    and gain in ROUGE value is calculated. Article sentence which
+    improves this value the most is labelled as 1 meaning 'in the
+    summary'. Article sentences are not picked once either of the
+    two conditions are satisfied
+     - total 5 sentences are already picked from the article
+     - adding a new sentence does not improve the ROUGE score
+    Args:
+        file: filename to be processed
+
+    Returns:
+        DataFrame: processed CNN/DailyMail articles with
+        labels
+    """
+    df = pd.read_csv(f"raw_data/cnn_dailymail/{file}.csv", header=None, names=["id", "article", 'highlights'])
     scorer = rouge_scorer.RougeScorer(['rouge2'], use_stemmer=True)
     labels = []
     all_article_sentences = []
@@ -39,8 +54,10 @@ def main():
     df['processed_article'] = all_article_sentences
     df['processed_summary'] = df.highlights.apply(sent_tokenize)
     df['labels'] = pd.Series(labels)
-    df.to_csv(f"raw_data/cnn_dailymail/{filename}.rouge.processed.csv")
+    df.to_csv(f"raw_data/cnn_dailymail/{file}.rouge.processed.csv")
+    return df
 
 
 if __name__ == '__main__':
-    main()
+    filename = "input1"
+    main(filename)
