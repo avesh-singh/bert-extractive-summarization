@@ -1,4 +1,3 @@
-from curses.ascii import isalnum
 from os import walk
 import re
 from nltk.tokenize import sent_tokenize, word_tokenize
@@ -65,7 +64,7 @@ def read_articles(article_set="D0601A", data_dir="DUC2006_Summarization_Document
     return article_sentences
 
 
-def read_summaries(article_set="D0601A", preprocess=True, creator='DUC2006_Summarization_Documents/NISTeval/ROUGE'
+def read_summaries(article_set="D0601A", creator='DUC2006_Summarization_Documents/NISTeval/ROUGE'
                                                                   '/models', num_sum=-1):
     """
     This method is for reading DUC dataset summaries for provided topic,
@@ -86,12 +85,9 @@ def read_summaries(article_set="D0601A", preprocess=True, creator='DUC2006_Summa
             continue
         with open(name, 'r') as f:
             summary_lines = f.readlines()
-            summaries += [line.strip() for line in summary_lines]
+            summaries.append([line.strip() for line in summary_lines])
         num += 1
-    if preprocess:
-        return preprocess_sentences(summaries)
-    else:
-        return summaries
+    return summaries
 
 
 def cosine(u, v):
@@ -212,12 +208,13 @@ if __name__ == "__main__":
             # "D0642F",
             # "D0644H",
             # "D0646A",
-            # "D0648C",
-            "D0650E"
+            "D0648C",
+            # "D0650E"
         ]
     else:
         topics = [args[1]]
     for topic in topics:
         articles = read_articles(topic)
         summaries = read_summaries(topic)
-        calculate_similarities(topic, articles, summaries)
+        concat_summaries = [article_summary for topic_summary in summaries for article_summary in topic_summary]
+        calculate_similarities(topic, articles, preprocess_sentences(concat_summaries))

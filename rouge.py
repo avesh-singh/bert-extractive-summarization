@@ -4,8 +4,12 @@ from ext_sum import summarize
 from scrape import read_articles, read_summaries
 from rouge_score import rouge_scorer
 from functools import reduce
+from rouge_metric import PyRouge
+import pickle
+
 
 scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+rouge = PyRouge(rouge_w=True, rouge_w_weight=1.2, rouge_s=True, rouge_su=True, skip_gap=4)
 # Load model
 checkpoint = torch.load(f'gru_model_1_layer.pt', map_location='cpu')
 model = ExtSummarizer(device='cpu', checkpoint=checkpoint, gru_layers=1)
@@ -91,31 +95,31 @@ topics = [
     "D0742J",
     "D0703A",
     "D0708B",
-    # "D0713C",
-    # "D0718D",
-    # "D0723F",
-    # "D0728G",
-    # "D0733H",
-    # "D0738I",
-    # "D0743J",
-    # "D0704A",
-    # "D0709B",
-    # "D0714D",
-    # "D0719E",
-    # "D0724F",
-    # "D0729G",
-    # "D0734H",
-    # "D0739I",
-    # "D0744J",
-    # "D0705A",
-    # "D0710C",
-    # "D0715D",
-    # "D0720E",
-    # "D0725F",
-    # "D0730G",
-    # "D0735H",
-    # "D0740I",
-    # "D0745J"
+    # "D0713C", --
+    "D0718D",
+    "D0723F",
+    "D0728G",
+    "D0733H",
+    "D0738I",
+    "D0743J",
+    "D0704A",
+    "D0709B",
+    "D0714D",
+    "D0719E",
+    "D0724F",
+    "D0729G",
+    "D0734H",
+    "D0739I",
+    "D0744J",
+    "D0705A",
+    "D0710C",
+    "D0715D",
+    "D0720E",
+    "D0725F",
+    "D0730G",
+    "D0735H",
+    # "D0740I", ---
+    "D0745J"
 ]
 
 topic_wise_scores = {}
@@ -135,7 +139,8 @@ def convert_to_json(score):
 def average_rouge(scores, rouge='rouge1', measure='fmeasure'):
     return reduce(lambda total, key: total + scores[key][rouge][measure], scores, 0) / len(scores)
 
-
+model_summaries = {}
+human_summaries = {}
 for topic in topics:
     articles = read_articles(data_dir=data_directory, article_set=topic, write=False)
     topic_summaries = []
@@ -143,14 +148,29 @@ for topic in topics:
         result_fp = f"results/summary_{article['filename']}.txt"
         summary = summarize(article, result_fp, model, max_length=1)
         topic_summaries.append(summary)
-    summaries = read_summaries(article_set=topic, creator=f"{summary_directory}/models", preprocess=False)
-    human_summaries = "\n".join(summaries)
-    model_summaries = "\n".join(topic_summaries)
-    scores = scorer.score(human_summaries, model_summaries)
-    topic_wise_scores[topic] = scores
+    summaries = read_summaries(article_set=topic, creator=f"{summary_directory}/models")
+    human_summaries[topic] = ["\n".join(topic_summary) for topic_summary in summaries]
+    model_summaries[topic] = "\n".join(topic_summaries)
+    scores = scorer.score(human_summaries[topic][0], model_summaries[topic])
 
+    topic_wise_scores[topic] = scores
+with open('results/2007/generated_topic_summaries.pkl', 'wb') as f:
+    pickle.dump(model_summaries, f)
+
+with open('results/2007/model_topic_summaries.pkl', 'wb') as f:
+    pickle.dump(human_summaries, f)
+
+print(rouge.evaluate(list(model_summaries.values()), list(human_summaries.values())))
 scores = {k: convert_to_json(v) for k, v in topic_wise_scores.items()}
 
-print(f"average recall on {len(topics)} topics: {average_rouge(scores, measure='recall')}")
-print(f"average precision on {len(topics)} topics: {average_rouge(scores, measure='precision')}")
-print(f"average fmeasure on {len(topics)} topics: {average_rouge(scores, measure='fmeasure')}")
+print(f"average rouge1 recall on {len(topics)} topics: {average_rouge(scores, rouge='rouge1', measure='recall')}")
+print(f"average rouge1 precision on {len(topics)} topics: {average_rouge(scores, rouge='rouge1', measure='precision')}")
+print(f"average rouge1 fmeasure on {len(topics)} topics: {average_rouge(scores, rouge='rouge1', measure='fmeasure')}")
+print("")
+print(f"average rouge2 recall on {len(topics)} topics: {average_rouge(scores, rouge='rouge2', measure='recall')}")
+print(f"average rouge2 precision on {len(topics)} topics: {average_rouge(scores, rouge='rouge2', measure='precision')}")
+print(f"average rouge2 fmeasure on {len(topics)} topics: {average_rouge(scores, rouge='rouge2', measure='fmeasure')}")
+print("")
+print(f"average rougeL recall on {len(topics)} topics: {average_rouge(scores, rouge='rougeL', measure='recall')}")
+print(f"average rougeL precision on {len(topics)} topics: {average_rouge(scores, rouge='rougeL', measure='precision')}")
+print(f"average rougeL fmeasure on {len(topics)} topics: {average_rouge(scores, rouge='rougeL', measure='fmeasure')}")
